@@ -4,3 +4,5 @@ appsettings.json
 *.db
 skinet.db-shm
 skinet.db-wal
+identity.db-shm
+identity.db-wal
