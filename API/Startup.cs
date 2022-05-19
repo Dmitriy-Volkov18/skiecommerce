@@ -3,10 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using API.Errors;
+using API.Extensions;
 using API.Helpers;
 using API.Middleware;
 using Core.Interfaces;
 using Infrastructure.Data;
+using Infrastructure.Data.Services;
+using Infrastructure.Identity;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -33,6 +36,7 @@ namespace API
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddScoped<ITokenService, TokenService>();
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             services.AddScoped<IProductRepository, ProductRepository>();
             services.AddAutoMapper(typeof(MappingProfiles));
@@ -40,6 +44,10 @@ namespace API
             services.AddDbContext<StoreContext>(options =>
             {
                 options.UseSqlite(_configuration.GetConnectionString("DefaultConnection"));
+            });
+
+            services.AddDbContext<AppIdentityDbContext>(x => {
+                x.UseSqlite(_configuration.GetConnectionString("IdentityConnection"));
             });
 
             services.AddScoped<IBasketRepository, BasketRepository>();
@@ -63,6 +71,8 @@ namespace API
                     return new BadRequestObjectResult(errorResponse);
                 };
             });
+
+            services.AddIdentityServices(_configuration);
 
             services.AddCors(opt => 
             {
@@ -98,6 +108,7 @@ namespace API
             app.UseStaticFiles();
             app.UseCors("CorsPolicy");
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
